@@ -1,37 +1,49 @@
+# Compiler and flags
 CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra -pthread
 
-# Include & Source directories
+# Project directories
 INCLUDE_DIR = include
 SRC_DIR = src
 FRONTEND_DIR = frontend
+BUILD_DIR = build
+BIN_DIR = bin
 
-# Additional Wt paths (assuming installed via /usr/local)
-WT_INC = /usr/local/include -Iinclude
+# vcpkg configuration (adjust this path if your vcpkg is elsewhere)
+VCPKG_DIR = $(HOME)/vcpkg
+VCPKG_INC = vcpkg/installed/x64-linux/include
+VCPKG_LIB = vcpkg/installed/x64-linux/lib
+
+# Optional Wt includes (if you're using Wt)
+WT_INC = /usr/local/include
 WT_LIB = /usr/local/lib
 
-# Libraries
+# Linked libraries (from vcpkg)
 LIBS = -lboost_system -lpthread -lsqlite3
 
-# List of all source files
+# Source and object files
 SRC_FILES := $(wildcard $(SRC_DIR)/*.cpp)
-OBJ_FILES := $(SRC_FILES:$(SRC_DIR)/%.cpp=build/%.o)
+OBJ_FILES := $(SRC_FILES:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 
 # Output binary
-BACKEND_BIN = bin/taskmaster_backend
+BACKEND_BIN = $(BIN_DIR)/taskmaster_backend
 
 # Create build and bin dirs if not present
-$(shell mkdir -p build bin)
+$(shell mkdir -p $(BUILD_DIR) $(BIN_DIR))
 
+# Default target
 all: $(BACKEND_BIN)
 
+# Linking
 $(BACKEND_BIN): $(OBJ_FILES)
-	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -I$(WT_INC) $^ -L$(WT_LIB) $(LIBS) -o $@
+	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -I$(WT_INC) -I$(VCPKG_INC) $^ -L$(WT_LIB) -L$(VCPKG_LIB) $(LIBS) -o $@
 
-build/%.o: $(SRC_DIR)/%.cpp
-	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -I$(WT_INC) -c $< -o $@
+# Compiling
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
+	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -I$(WT_INC) -I$(VCPKG_INC) -c $< -o $@
 
+# Clean build artifacts
 clean:
-	rm -rf build/*.o $(BACKEND_BIN)
+	rm -rf $(BUILD_DIR)/*.o $(BACKEND_BIN)
 
 .PHONY: all clean
